@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 사주 해석</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Serif KR', Georgia, serif;
+      background: #0d0a1a;
+      color: #e8d8b8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px 60px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      color: #f5c97a;
+      letter-spacing: 0.15em;
+      text-shadow: 0 0 24px #c8a84066;
+    }
+
+    header p {
+      margin-top: 8px;
+      font-size: 0.95rem;
+      color: #a09070;
+    }
+
+    .card {
+      background: #1a1430;
+      border: 1px solid #3a2d5a;
+      border-radius: 16px;
+      padding: 32px 36px;
+      width: 100%;
+      max-width: 560px;
+      box-shadow: 0 8px 40px #00000060;
+    }
+
+    .section-title {
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #8878aa;
+      margin-bottom: 10px;
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      color: #c8b89a;
+      margin-bottom: 6px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 14px;
+      background: #110d24;
+      border: 1px solid #3a2d5a;
+      border-radius: 8px;
+      color: #e8d8b8;
+      font-size: 1rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus {
+      border-color: #f5c97a;
+    }
+
+    input[type="password"] {
+      letter-spacing: 0.1em;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .api-note {
+      font-size: 0.78rem;
+      color: #6a5a7a;
+      margin-top: 4px;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #2e2448;
+      margin: 24px 0;
+    }
+
+    .gender-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .gender-group label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      color: #c8b89a;
+      margin: 0;
+    }
+
+    .gender-group input[type="radio"] {
+      width: auto;
+      accent-color: #f5c97a;
+    }
+
+    button#analyzeBtn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #c8960a, #e8b840);
+      color: #1a1000;
+      font-size: 1.05rem;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-top: 8px;
+    }
+
+    button#analyzeBtn:hover { opacity: 0.9; }
+    button#analyzeBtn:active { transform: scale(0.98); }
+    button#analyzeBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #result {
+      margin-top: 28px;
+      width: 100%;
+      max-width: 560px;
+      display: none;
+    }
+
+    .result-card {
+      background: #1a1430;
+      border: 1px solid #3a2d5a;
+      border-radius: 16px;
+      padding: 32px 36px;
+      box-shadow: 0 8px 40px #00000060;
+    }
+
+    .result-card h2 {
+      font-size: 1.2rem;
+      color: #f5c97a;
+      margin-bottom: 20px;
+      text-align: center;
+      letter-spacing: 0.1em;
+    }
+
+    #resultText {
+      line-height: 1.9;
+      font-size: 0.97rem;
+      color: #ddd0b8;
+      white-space: pre-wrap;
+    }
+
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 0;
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid #3a2d5a;
+      border-top-color: #f5c97a;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading p {
+      color: #a09070;
+      font-size: 0.9rem;
+    }
+
+    .error {
+      color: #e87070;
+      background: #2a1010;
+      border: 1px solid #5a2020;
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 0.9rem;
+    }
+
+    footer {
+      margin-top: 40px;
+      font-size: 0.78rem;
+      color: #4a3a5a;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>✦ AI 사주 해석 ✦</h1>
+  <p>생년월일시를 입력하면 AI가 사주를 풀어드립니다</p>
+</header>
+
+<div class="card">
+
+  <!-- API Key -->
+  <div class="field">
+    <p class="section-title">🔑 Groq API 설정</p>
+    <label for="apiKey">API 키</label>
+    <input type="password" id="apiKey" placeholder="gsk_..." autocomplete="off" />
+    <p class="api-note">키는 브라우저에만 저장되며 외부로 전송되지 않습니다 (Groq API 직접 호출)</p>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Birth Info -->
+  <p class="section-title">📅 생년월일시</p>
+
+  <div class="row">
+    <div class="field">
+      <label for="byear">출생 연도</label>
+      <input type="number" id="byear" placeholder="예: 1990" min="1900" max="2025" />
+    </div>
+    <div class="field">
+      <label for="bmonth">월</label>
+      <select id="bmonth">
+        <option value="">-- 월 --</option>
+        <option>1</option><option>2</option><option>3</option>
+        <option>4</option><option>5</option><option>6</option>
+        <option>7</option><option>8</option><option>9</option>
+        <option>10</option><option>11</option><option>12</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <label for="bday">일</label>
+      <input type="number" id="bday" placeholder="예: 15" min="1" max="31" />
+    </div>
+    <div class="field">
+      <label for="bhour">시 (0~23시)</label>
+      <input type="number" id="bhour" placeholder="예: 14" min="0" max="23" />
+    </div>
+  </div>
+
+  <div class="field">
+    <label>성별</label>
+    <div class="gender-group">
+      <label><input type="radio" name="gender" value="남성" checked /> 남성</label>
+      <label><input type="radio" name="gender" value="여성" /> 여성</label>
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="question">추가로 궁금한 점 <span style="color:#6a5a7a">(선택)</span></label>
+    <input type="text" id="question" placeholder="예: 올해 직장운이 궁금해요" />
+  </div>
+
+  <button id="analyzeBtn" onclick="analyze()">사주 해석하기</button>
+</div>
+
+<div id="result">
+  <div class="result-card">
+    <h2>✦ 사주 해석 결과 ✦</h2>
+    <div id="resultText"></div>
+  </div>
+</div>
+
+<footer>Powered by Groq · llama-3.3-70b-versatile · 이 해석은 참고용입니다</footer>
+
+<script>
+  const HOUR_TO_GANJI = [
+    "자시(子時, 23~01시)", "축시(丑時, 01~03시)", "인시(寅時, 03~05시)",
+    "묘시(卯時, 05~07시)", "진시(辰時, 07~09시)", "사시(巳時, 09~11시)",
+    "오시(午時, 11~13시)", "미시(未時, 13~15시)", "신시(申時, 15~17시)",
+    "유시(酉時, 17~19시)", "술시(戌時, 19~21시)", "해시(亥時, 21~23시)"
+  ];
+
+  function getHourGanji(hour) {
+    if (hour === 23 || hour === 0) return HOUR_TO_GANJI[0];
+    return HOUR_TO_GANJI[Math.floor((hour + 1) / 2)];
+  }
+
+  function getYearGanji(year) {
+    const cheongan = ["경","신","임","계","갑","을","병","정","무","기"];
+    const jiji     = ["신","유","술","해","자","축","인","묘","진","사","오","미"];
+    const c = cheongan[(year - 4) % 10];
+    const j = jiji[(year - 4) % 12];
+    return `${c}${j}년`;
+  }
+
+  async function analyze() {
+    const apiKey  = document.getElementById('apiKey').value.trim();
+    const year    = parseInt(document.getElementById('byear').value);
+    const month   = parseInt(document.getElementById('bmonth').value);
+    const day     = parseInt(document.getElementById('bday').value);
+    const hour    = parseInt(document.getElementById('bhour').value);
+    const gender  = document.querySelector('input[name="gender"]:checked').value;
+    const question = document.getElementById('question').value.trim();
+
+    if (!apiKey) return alert('Groq API 키를 입력해주세요.');
+    if (!year || !month || !day || isNaN(hour))
+      return alert('생년월일시를 모두 입력해주세요.');
+
+    const btn = document.getElementById('analyzeBtn');
+    const resultDiv = document.getElementById('result');
+    const resultText = document.getElementById('resultText');
+
+    btn.disabled = true;
+    resultDiv.style.display = 'block';
+    resultText.innerHTML = `
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>사주를 분석하는 중입니다...</p>
+      </div>`;
+    resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    const yearGanji = getYearGanji(year);
+    const hourGanji = getHourGanji(hour);
+
+    const prompt = `당신은 한국 전통 사주명리학 전문가입니다. 아래 정보를 바탕으로 사주를 상세히 해석해주세요.
+
+[입력 정보]
+- 생년: ${year}년 (${yearGanji})
+- 생월: ${month}월
+- 생일: ${day}일
+- 생시: ${hour}시 (${hourGanji})
+- 성별: ${gender}
+${question ? `- 특별히 궁금한 점: ${question}` : ''}
+
+[해석 요청 항목]
+1. 사주 개요 (오행 분석, 일간 특성)
+2. 타고난 성격과 기질
+3. 올해(2026년 병오년) 운세 총평
+4. 직업/재물운
+5. 인간관계/애정운
+6. 건강운
+7. 조언 및 주의사항
+
+각 항목을 명확히 구분하여 한국어로 상세하고 따뜻하게 풀어주세요. 전통 사주 용어는 쉽게 설명을 덧붙여주세요.`;
+
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.8,
+          max_tokens: 2048,
+          stream: true
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `HTTP ${res.status}`);
+      }
+
+      // Stream response
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let full = '';
+      resultText.textContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6).trim();
+          if (data === '[DONE]') break;
+          try {
+            const json = JSON.parse(data);
+            const token = json.choices?.[0]?.delta?.content || '';
+            full += token;
+            resultText.textContent = full;
+          } catch {}
+        }
+      }
+
+    } catch (e) {
+      resultText.innerHTML = `<div class="error">오류가 발생했습니다: ${e.message}<br><br>API 키를 확인하거나 잠시 후 다시 시도해주세요.</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>
